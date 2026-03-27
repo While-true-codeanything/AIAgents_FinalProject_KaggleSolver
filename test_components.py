@@ -1,3 +1,4 @@
+from src.agents.engineer import run_engineer
 from src.agents.explorer import run_explorer
 from src.config import CONFIG
 from src.tools.dataset_inputer import load_data, get_dataset_info, \
@@ -26,3 +27,11 @@ def test_explorer():
     summary = get_dataset_info(train_df, test_df, 'target')
     response = run_explorer(summary, CONFIG["models"]["explorer"])
     print(response)
+
+
+def test_engineer():
+    train_df, test_df, sample_submition = load_data()
+    summary = get_dataset_info(train_df, test_df, 'target')
+    explorer_response = run_explorer(summary, CONFIG["models"]["explorer"])
+    engineer_response = run_engineer(summary, explorer_response, CONFIG["models"]["engineer"], critic_feedback=None)
+    print(engineer_response)
