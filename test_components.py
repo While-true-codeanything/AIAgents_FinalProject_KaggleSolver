@@ -1,3 +1,5 @@
+from src.agents.explorer import run_explorer
+from src.config import CONFIG
 from src.tools.dataset_inputer import load_data, get_dataset_info, \
     format_dataset_info
 from src.tools.llm_api_connector import ask_model_response
@@ -17,3 +19,10 @@ def test_modelapi():
         model="qwen/qwen3-coder-next",
     )
     print(response["text"])
+
+
+def test_explorer():
+    train_df, test_df, sample_submition = load_data()
+    summary = get_dataset_info(train_df, test_df, 'target')
+    response = run_explorer(summary, CONFIG["models"]["explorer"])
+    print(response)

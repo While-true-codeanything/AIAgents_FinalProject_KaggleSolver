@@ -51,8 +51,8 @@ def get_dataset_info(train_df, test_df, target_col):
         "test_dtypes": test_df.dtypes.astype(str).to_dict(),
         "test_nans": test_df.isna().sum().to_dict(),
 
-        "train_head": train_df.head(1),
-        "test_head": test_df.head(1),
+        "train_head": train_df.head(1).to_dict(orient="records"),
+        "test_head": test_df.head(1).to_dict(orient="records"),
         "target_info": target_info,
     }
 
