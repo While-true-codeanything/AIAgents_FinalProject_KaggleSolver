@@ -29,6 +29,11 @@ Rules:
 - if the code worked, suggest at most 3 small improvements
 - be concise
 
+Runtime constraint:
+- The full script must stay within 300 seconds.
+- Suggest only improvements that are realistic within this runtime budget.
+- Prefer small, targeted improvements over heavier models or more expensive validation.
+
 Return your answer in this format:
 
 MAIN_PROBLEMS:

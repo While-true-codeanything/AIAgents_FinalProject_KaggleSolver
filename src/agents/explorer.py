@@ -27,6 +27,12 @@ Rules:
 - do not suggest lightgbm or any unavailable library
 - do not write code
 
+Runtime constraint:
+- The final training script must fit comfortably within 300 seconds total runtime.
+- Prefer practical baseline solutions that are accurate enough and efficient.
+- Avoid suggesting heavy pipelines, expensive NLP, or costly hyperparameter tuning.
+
+
 Return your answer in the following format:
 
 TASK_TYPE: ...

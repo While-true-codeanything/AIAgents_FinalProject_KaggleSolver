@@ -28,6 +28,7 @@ Task rules:
   CV_SCORE=<number>
 - save final submission to:
   artifacts/submissions/submission.csv
+- use only 2 columns in submission.csv: index,prediction
 - return only pure Python code
 - no markdown
 - no explanations
@@ -48,11 +49,28 @@ Important preprocessing rules:
 12. Keep the same working pipeline structure if improving a previous version.
 13. Make minimal changes when applying critic feedback.
 
+Execution time constraint:
+- The whole script must finish within executor_timeout.
+- Assume the hard limit is 300 seconds.
+- Target your script to run comfortably below this limit.
+- Prefer a total runtime around 200 seconds, including preprocessing, cross-validation, final training, and submission saving.
+- Keep the model and preprocessing lightweight enough to avoid timeout.
+- Do not use unnecessarily large numbers of trees, folds, or heavy feature engineering.
+- Prefer simple and efficient preprocessing.
+- If using CatBoost or XGBoost, choose parameters that are likely to finish within the time budget.
+
 Modeling rules:
 - If using CatBoost, explicitly define categorical columns.
 - Do not use LightGBM or any other unavailable library.
 - Do not build heavy NLP pipelines.
 - name can be dropped if needed.
+Efficiency rules:
+- Prefer 3-5 fold CV, but keep runtime under control.
+- Do not use very large n_estimators / iterations.
+- Do not use expensive search procedures such as grid search, random search, or optuna.
+- Use modest model sizes first.
+- If runtime risk is high, prefer a smaller model over a more complex one.
+
 """
 
 
