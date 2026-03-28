@@ -28,7 +28,7 @@ Task rules:
   CV_SCORE=<number>
 - save final submission to:
   artifacts/submissions/submission.csv
-- use only 2 columns in submission.csv: index,prediction
+- use only 2 columns in submission.csv: index,prediction. Make index column - as numbers 0 to max dataset len. Do not match them with existigs id, just list as follows
 - return only pure Python code
 - no markdown
 - no explanations
