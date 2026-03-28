@@ -11,7 +11,7 @@ Your task:
 - read data from:
   data/train.csv
   data/test.csv
-  data/submission_sample.csv
+  data/sample_submition.csv
 - build a baseline solution
 - infer whether the task is classification or regression from target statistics and explorer plan
 - create simple, practical preprocessing
@@ -20,6 +20,8 @@ Your task:
   CV_SCORE=<number>
 - save submission to:
   artifacts/submissions/submission.csv
+- submission.csv should have only 2 columns: index,prediction. Name target here - as prediction
+  
 
 Rules:
 - return only pure Python code

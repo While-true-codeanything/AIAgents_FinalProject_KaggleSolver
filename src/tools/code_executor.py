@@ -1,5 +1,6 @@
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 from src.config import BASE_DIR
@@ -39,11 +40,11 @@ def execute_code(code_text, file_path, timeout=120):
     save_code(code_text, file_path)
 
     result = subprocess.run(
-        ["python", str(file_path)],
+        [sys.executable, str(file_path)],
         capture_output=True,
         text=True,
         timeout=timeout,
-        cwd=print(BASE_DIR)
+        cwd=BASE_DIR,
     )
 
     stdout = result.stdout
