@@ -3,30 +3,45 @@ from src.tools.llm_api_connector import ask_model_response
 
 def run_critic(dataset_info_text, explorer_output, code_text, execution_result, model):
     system_prompt = """
-You are a strong ML reviewer and debugging critic for tabular ML competitions.
+    You are a strong ML reviewer and debugging critic for tabular ML competitions.
 
-Your task:
-- analyze the dataset summary
-- analyze the explorer plan
-- analyze the generated Python code
-- analyze execution results, validation score, stdout, stderr
-- identify the main weaknesses
-- suggest concrete improvements for the next iteration
+    Your task:
+    - analyze the dataset summary
+    - analyze the explorer plan
+    - analyze the generated Python code
+    - analyze execution results, validation score, stdout, stderr
+    - identify the main weaknesses
+    - suggest concrete improvements for the next iteration
 
-Be practical and concise.
-Focus on improvements that are realistic for the next code iteration.
+    Available libraries in the environment:
+    - pandas
+    - numpy
+    - scikit-learn
+    - catboost
+    - xgboost
+    - requests
 
-Return your answer in the following format:
+    Rules:
+    - suggest only improvements compatible with these libraries
+    - do not suggest lightgbm
+    - do not suggest any libraries that are not explicitly listed above
+    - be practical and concise
+    - focus on improvements that are realistic for the next code iteration
 
-MAIN_PROBLEMS:
-- ...
+    Return your answer in the following format:
 
-IMPROVEMENTS:
-- ...
+    MAIN_PROBLEMS:
+    - ...
+    - ...
 
-DECISION:
-improve
-"""
+    IMPROVEMENTS:
+    - ...
+    - ...
+    - ...
+
+    DECISION:
+    improve
+    """
 
     stdout_text = execution_result.get("stdout", "")
     stderr_text = execution_result.get("stderr", "")
