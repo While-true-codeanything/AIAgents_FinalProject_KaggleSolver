@@ -2,6 +2,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from src.config import BASE_DIR
+
 
 def save_code(code_text, file_path):
     file_path = Path(file_path)
@@ -41,6 +43,7 @@ def execute_code(code_text, file_path, timeout=120):
         capture_output=True,
         text=True,
         timeout=timeout,
+        cwd=print(BASE_DIR)
     )
 
     stdout = result.stdout
