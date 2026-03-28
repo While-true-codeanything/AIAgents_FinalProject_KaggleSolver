@@ -40,12 +40,21 @@ def test_engineer():
 
 def test_code_executor():
     response = ask_model_response(
-        promt='''Write script to print (10 * 10). Then write a blanck value for it to look like print(f"CV_SCORE={
-        mean_cv_score}") in output''',
-        system_prompt="You are a strong ML engineer. Return only Python code.",
+        '''
+Write a Python script that:
+1. computes 10 * 10
+2. prints the result
+3. sets mean_cv_score = 0.0
+4. prints it exactly as:
+print(f"CV_SCORE={mean_cv_score}")
+
+Return only Python code.
+''',
         model="qwen/qwen3-coder-next",
+        system_prompt="You are a strong ML engineer. Return only Python code.",
     )
+
     print(response["text"])
-    file_path = 'test_ce.py'
+    file_path = "test_ce.py"
     result = execute_code(response["text"], file_path, timeout=300)
     print(result)

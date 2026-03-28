@@ -18,7 +18,22 @@ def extract_cv_score(stdout_text):
     return None
 
 
+def clean_code_text(code_text):
+    code_text = code_text.strip()
+
+    if code_text.startswith("```python"):
+        code_text = code_text[len("```python"):].strip()
+    elif code_text.startswith("```"):
+        code_text = code_text[len("```"):].strip()
+
+    if code_text.endswith("```"):
+        code_text = code_text[:-3].strip()
+
+    return code_text
+
+
 def execute_code(code_text, file_path, timeout=120):
+    code_text = clean_code_text(code_text)
     save_code(code_text, file_path)
 
     result = subprocess.run(
