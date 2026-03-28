@@ -1,0 +1,66 @@
+from src.tools.llm_api_connector import ask_model_response
+
+
+def run_critic(dataset_info_text, explorer_output, code_text, execution_result, model):
+    system_prompt = """
+You are a strong ML reviewer and debugging critic for tabular ML competitions.
+
+Your task:
+- analyze the dataset summary
+- analyze the explorer plan
+- analyze the generated Python code
+- analyze execution results, validation score, stdout, stderr
+- identify the main weaknesses
+- suggest concrete improvements for the next iteration
+
+Be practical and concise.
+Focus on improvements that are realistic for the next code iteration.
+
+Return your answer in the following format:
+
+MAIN_PROBLEMS:
+- ...
+
+IMPROVEMENTS:
+- ...
+
+DECISION:
+improve
+"""
+
+    stdout_text = execution_result.get("stdout", "")
+    stderr_text = execution_result.get("stderr", "")
+    return_code = execution_result.get("return_code", None)
+    cv_score = execution_result.get("cv_score", None)
+
+    user_prompt = f"""
+Dataset summary:
+{dataset_info_text}
+
+Explorer plan:
+{explorer_output}
+
+Generated code:
+{code_text}
+
+Execution result:
+return_code={return_code}
+cv_score={cv_score}
+
+STDOUT:
+{stdout_text}
+
+STDERR:
+{stderr_text}
+"""
+
+    response = ask_model_response(
+        user_prompt,
+        model=model,
+        system_prompt=system_prompt,
+        temperature=0.2,
+        max_tokens=2000,
+        timeout=60,
+    )
+
+    return response["text"].strip()
