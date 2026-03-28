@@ -50,6 +50,7 @@ def run_supervisor():
         )
 
         code_path = CONFIG["paths"]["generated_code"] / f"iteration_{iteration}.py"
+
         execution_result = execute_code(
             code_text=code_text,
             file_path=code_path,
@@ -60,24 +61,25 @@ def run_supervisor():
         print(execution_result)
 
         current_score = execution_result.get("cv_score")
+        current_ok = execution_result.get("return_code") == 0 and current_score is not None
 
         all_results.append(
             {
                 "iteration": iteration,
-                "code_path": str(code_path),
                 "code_text": code_text,
+                "code_path": str(code_path),
                 "execution_result": execution_result,
             }
         )
 
-        if current_score is not None and (best_score is None or current_score > best_score):
+        if current_ok and (best_score is None or current_score < best_score):
+            # Для RMSE меньше лучше
             best_score = current_score
             best_result = execution_result
             best_code = code_text
             best_iteration = iteration
 
         if iteration < max_iters:
-            print(f"\n=== CRITIC: AFTER ITERATION {iteration} ===")
             critic_feedback = run_critic(
                 dataset_info_text=dataset_info_text,
                 explorer_output=explorer_output,
@@ -85,21 +87,28 @@ def run_supervisor():
                 execution_result=execution_result,
                 model=CONFIG["models"]["critic"],
             )
+
+            print(f"\n=== CRITIC: AFTER ITERATION {iteration} ===")
             print(critic_feedback)
 
     if best_code is None and all_results:
-        best_iteration_data = all_results[0]
-        best_code = best_iteration_data["code_text"]
-        best_result = best_iteration_data["execution_result"]
-        best_iteration = best_iteration_data["iteration"]
+        for item in all_results:
+            if item["execution_result"].get("return_code") == 0:
+                best_code = item["code_text"]
+                best_result = item["execution_result"]
+                best_iteration = item["iteration"]
+                break
 
-    best_code_path = CONFIG["paths"]["generated_code"] / "best_pipeline.py"
-    with open(best_code_path, "w", encoding="utf-8") as f:
-        f.write(best_code)
+    if best_code is not None:
+        best_code_path = CONFIG["paths"]["generated_code"] / "best_pipeline.py"
+        with open(best_code_path, "w", encoding="utf-8") as f:
+            f.write(best_code)
+    else:
+        best_code_path = None
 
     print("\n=== FINAL RESULT ===")
     print(f"Best iteration: {best_iteration}")
-    print(f"Best CV score: {best_result.get('cv_score')}")
+    print(f"Best CV score: {None if best_result is None else best_result.get('cv_score')}")
     print(f"Best script path: {best_code_path}")
 
     return {
@@ -108,5 +117,5 @@ def run_supervisor():
         "all_results": all_results,
         "best_result": best_result,
         "best_iteration": best_iteration,
-        "best_code_path": str(best_code_path),
+        "best_code_path": None if best_code_path is None else str(best_code_path),
     }

@@ -5,32 +5,56 @@ def run_engineer(dataset_info_text, explorer_output, model, critic_feedback=None
     system_prompt = """
 You are a strong ML engineer working on a tabular machine learning competition.
 
-Your task:
-- write a full Python script
-- use pandas, numpy, scikit-learn, catboost
+Write one complete Python script.
+
+Installed libraries you may use:
+- pandas
+- numpy
+- scikit-learn
+- catboost
+- xgboost
+- requests
+
+Use only these libraries.
+
+Task rules:
 - read data from:
   data/train.csv
   data/test.csv
   data/sample_submition.csv
-- build a baseline solution
-- infer whether the task is classification or regression from target statistics and explorer plan
-- create simple, practical preprocessing
-- use cross-validation on train
-- print validation score in this exact format:
+- infer task type from dataset summary and explorer plan
+- use 5-fold cross-validation
+- print final cross-validation score exactly as:
   CV_SCORE=<number>
-- save submission to:
+- save final submission to:
   artifacts/submissions/submission.csv
-- submission.csv should have only 2 columns: index,prediction. Name target here - as prediction
-  
-
-Rules:
 - return only pure Python code
 - no markdown
 - no explanations
 - no backticks
-- code must be complete and runnable
-- keep the solution simple and robust
+
+Important preprocessing rules:
+1. Parse last_dt as datetime.
+2. Create one numeric feature from last_dt, for example days_since_last_review.
+3. Use one fixed reference date from train only.
+4. Drop original last_dt after feature extraction.
+5. For every categorical column: fill missing values with 'MISSING' and cast to string.
+6. For every numeric column: fill missing values with median.
+7. Do not pass raw datetime columns into the model.
+8. Keep the preprocessing simple and explicit.
+9. Prefer CatBoost for this dataset.
+10. Use verbose=False.
+11. For final training on full data, do not use use_best_model=True unless eval_set is provided.
+12. Keep the same working pipeline structure if improving a previous version.
+13. Make minimal changes when applying critic feedback.
+
+Modeling rules:
+- If using CatBoost, explicitly define categorical columns.
+- Do not use LightGBM or any other unavailable library.
+- Do not build heavy NLP pipelines.
+- name can be dropped if needed.
 """
+
 
     user_prompt = f"""
 Dataset summary:

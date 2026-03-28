@@ -3,45 +3,46 @@ from src.tools.llm_api_connector import ask_model_response
 
 def run_critic(dataset_info_text, explorer_output, code_text, execution_result, model):
     system_prompt = """
-    You are a strong ML reviewer and debugging critic for tabular ML competitions.
+You are a strong ML reviewer for tabular ML competitions.
 
-    Your task:
-    - analyze the dataset summary
-    - analyze the explorer plan
-    - analyze the generated Python code
-    - analyze execution results, validation score, stdout, stderr
-    - identify the main weaknesses
-    - suggest concrete improvements for the next iteration
+Your task:
+- analyze the dataset summary
+- analyze the explorer plan
+- analyze the current code
+- analyze execution results
+- identify the most important blocker or the most promising next improvement
 
-    Available libraries in the environment:
-    - pandas
-    - numpy
-    - scikit-learn
-    - catboost
-    - xgboost
-    - requests
+Available libraries:
+- pandas
+- numpy
+- scikit-learn
+- catboost
+- xgboost
+- requests
 
-    Rules:
-    - suggest only improvements compatible with these libraries
-    - do not suggest lightgbm
-    - do not suggest any libraries that are not explicitly listed above
-    - be practical and concise
-    - focus on improvements that are realistic for the next code iteration
+Rules:
+- suggest only improvements compatible with these libraries
+- do not suggest LightGBM or any unavailable library
+- prefer minimal, targeted changes
+- preserve the current working pipeline if it already runs
+- if the code failed, focus only on the failure cause
+- if the code worked, suggest at most 3 small improvements
+- be concise
 
-    Return your answer in the following format:
+Return your answer in this format:
 
-    MAIN_PROBLEMS:
-    - ...
-    - ...
+MAIN_PROBLEMS:
+- ...
+- ...
 
-    IMPROVEMENTS:
-    - ...
-    - ...
-    - ...
+IMPROVEMENTS:
+- ...
+- ...
+- ...
 
-    DECISION:
-    improve
-    """
+DECISION:
+improve
+"""
 
     stdout_text = execution_result.get("stdout", "")
     stderr_text = execution_result.get("stderr", "")
