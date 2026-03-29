@@ -1,8 +1,9 @@
+from src.config import CONFIG
 from src.tools.llm_api_connector import ask_model_response
 
 
 def run_critic(dataset_info_text, explorer_output, code_text, execution_result, model):
-    system_prompt = """
+    system_prompt = f"""
 You are a strong ML reviewer for tabular ML competitions.
 
 Your task:
@@ -34,7 +35,7 @@ Rules:
 - Do not suggest creating new random train/validation splits.
 
 Runtime constraint:
-- The full script must stay within 300 seconds.
+- The full script must stay within {CONFIG['run']['executor_timeout']} seconds.
 - Suggest only improvements that are realistic within this runtime budget.
 - Prefer small, targeted improvements over heavier models.
 

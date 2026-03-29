@@ -1,8 +1,9 @@
+from src.config import CONFIG
 from src.tools.llm_api_connector import ask_model_response
 
 
 def run_explorer(dataset_info_text, model):
-    system_prompt = system_prompt = """
+    system_prompt = system_prompt = f"""
 You are an experienced ML data analyst.
 
 Your task:
@@ -28,7 +29,7 @@ Rules:
 - do not write code
 
 Runtime constraint:
-- The final training script must fit comfortably within 300 seconds total runtime.
+- The final training script must fit comfortably within {CONFIG['run']['executor_timeout']} seconds total runtime.
 - Prefer practical baseline solutions that are accurate enough and efficient.
 - Avoid suggesting heavy pipelines, expensive NLP, or costly hyperparameter tuning.
 

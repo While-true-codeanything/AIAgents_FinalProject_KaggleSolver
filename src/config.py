@@ -29,7 +29,7 @@ CONFIG = {
         "metric_name": "rmse",
         "random_seed": 42,
         "valid_size": 0.2,
-        "executor_timeout": 300,
+        "executor_timeout": 400,
     },
 }
 

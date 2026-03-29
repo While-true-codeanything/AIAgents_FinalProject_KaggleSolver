@@ -1,4 +1,4 @@
-from src.config import ensure_directories
+from src.config import ensure_directories, CONFIG
 from src.tools.llm_api_connector import ask_model_response
 
 
@@ -78,8 +78,8 @@ Important preprocessing rules:
 13. Make minimal changes when applying critic feedback.
 
 Runtime constraint:
-- The hard timeout is 300 seconds.
-- Aim to finish safely within 200-250 seconds total.
+- The hard timeout is {CONFIG['run']['executor_timeout']} seconds.
+- Aim to finish safely within {CONFIG['run']['executor_timeout'] - 60} seconds total.
 - This includes preprocessing, local validation, final training, and submission generation.
 - Avoid large models, expensive feature engineering, and hyperparameter search.
 - If using CatBoost or XGBoost, choose parameters that are likely to finish within the time budget.
