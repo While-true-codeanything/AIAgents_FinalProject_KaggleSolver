@@ -20,6 +20,7 @@ Rules:
 - no markdown
 - no explanations
 - no backticks
+- submit - Format: index, prediction
 
 CRITICAL:
 - Return ONLY valid Python code
@@ -32,7 +33,7 @@ Submission rules:
 - Predict test.csv
 - Build submission strictly from data/sample_submition.csv/ Use it structure and data/test.csv predictions
 - Do NOT use test["_id"] as submission ID
-- Preserve the first column from sample_submition.csv exactly as-is. Fill only the prediction column. Format: index,prediction
+- Preserve the first column from sample_submition.csv exactly as-is. Fill only the prediction column. Format: index, prediction
 - Fill only the prediction column
   
 Validation rules:

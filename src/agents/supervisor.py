@@ -8,6 +8,7 @@ from src.agents.explorer import run_explorer
 from src.agents.engineer import run_engineer
 from src.agents.critic import run_critic
 from src.agents.debugger import run_debugger
+from src.tools.submit_best import submit_to_kaggle
 
 
 def try_debug_code(dataset_info_text, explorer_output, code_text, execution_result, debugger_model, code_path, timeout, max_debug_attempts=3):
@@ -188,6 +189,9 @@ def run_supervisor():
     print(f"Best score: {None if best_result is None else best_result.get('score')}")
     print(f"Best script path: {best_code_path}")
     print(f"Best submission path: {best_submission_path if best_submission_path.exists() else None}")
+
+    submit_to_kaggle(competition='mws-ai-agents-2026', file_path="artifacts/submissions/best_submission.csv",
+                     message='automatic_best_submit')
 
     return {
         "dataset_info_text": dataset_info_text,

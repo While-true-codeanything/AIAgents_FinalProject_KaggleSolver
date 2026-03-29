@@ -25,12 +25,12 @@ CONFIG = {
     "run": {
         "target_col": "target",
         "id_col": "_id",
-        "max_iters": 4,
+        "max_iters": 5,
         "metric_name": "rmse",
         "random_seed": 42,
         "valid_size": 0.2,
         "executor_timeout": 400,
-        'main_metric' : 'MSE'
+        'main_metric': 'MSE'
     },
 }
 
