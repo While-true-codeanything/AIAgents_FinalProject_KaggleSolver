@@ -64,8 +64,23 @@ Modeling rules:
 - Do not use LightGBM or any other unavailable library.
 - Do not build heavy NLP pipelines.
 - name can be dropped if needed.
+
+Use fixed cross-validation splits:
+- Do not create new train/validation splits inside the script.
+- Load CV splits from:
+  artifacts/data_splits/cv_splits.json
+- Use these exact saved folds for all cross-validation.
+- This is required so that all iterations are compared on the same validation data.
+
+Cross-validation rules:
+- Load fold indices from artifacts/data_splits/cv_splits.json
+- For each fold:
+  - use train_idx for fold training
+  - use valid_idx for fold validation
+- Compute one score per fold and average them
+- Do not use KFold, StratifiedKFold, train_test_split, or any new random split inside the generated script.
+
 Efficiency rules:
-- Prefer 3-5 fold CV, but keep runtime under control.
 - Do not use very large n_estimators / iterations.
 - Do not use expensive search procedures such as grid search, random search, or optuna.
 - Use modest model sizes first.

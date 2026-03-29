@@ -90,13 +90,6 @@ def ask_model_response(
     text = extract_text(result)
     usage = result.get("usage", {})
 
-    #print(
-    #    f"[LLM] model={model} "
-    #    f"prompt={usage.get('prompt_tokens', 'n/a')} "
-    #    f"completion={usage.get('completion_tokens', 'n/a')} "
-    #    f"total={usage.get('total_tokens', 'n/a')}"
-    #)
-
     return {
         "text": text,
         "usage": usage,

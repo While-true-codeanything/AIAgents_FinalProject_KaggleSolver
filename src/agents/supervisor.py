@@ -1,6 +1,7 @@
 from src.config import CONFIG, ensure_directories
 from src.tools.dataset_inputer import load_data, get_dataset_info, format_dataset_info
 from src.tools.code_executor import execute_code
+from src.tools.data_splits import build_cv_splits, save_cv_splits
 from src.agents.explorer import run_explorer
 from src.agents.engineer import run_engineer
 from src.agents.critic import run_critic
@@ -21,6 +22,21 @@ def run_supervisor():
         target_col=CONFIG["run"]["target_col"],
     )
     dataset_info_text = format_dataset_info(dataset_info)
+
+    splits_path = CONFIG["paths"]["data_splits"] / "cv_splits.json"
+
+    if not splits_path.exists():
+        cv_splits = build_cv_splits(
+            train_df=train_df,
+            target_col=CONFIG["run"]["target_col"],
+            n_folds=CONFIG["run"]["n_folds"],
+            random_state=CONFIG["run"]["random_seed"],
+            task_type="regression",
+        )
+        save_cv_splits(cv_splits, splits_path)
+        print(f"Saved CV splits to: {splits_path}")
+    else:
+        print(f"Using existing CV splits: {splits_path}")
 
     print("=== EXPLORER ===")
     explorer_output = run_explorer(
@@ -73,7 +89,6 @@ def run_supervisor():
         )
 
         if current_ok and (best_score is None or current_score < best_score):
-            # Для RMSE меньше лучше
             best_score = current_score
             best_result = execution_result
             best_code = code_text
@@ -90,14 +105,6 @@ def run_supervisor():
 
             print(f"\n=== CRITIC: AFTER ITERATION {iteration} ===")
             print(critic_feedback)
-
-    if best_code is None and all_results:
-        for item in all_results:
-            if item["execution_result"].get("return_code") == 0:
-                best_code = item["code_text"]
-                best_result = item["execution_result"]
-                best_iteration = item["iteration"]
-                break
 
     if best_code is not None:
         best_code_path = CONFIG["paths"]["generated_code"] / "best_pipeline.py"
@@ -118,4 +125,5 @@ def run_supervisor():
         "best_result": best_result,
         "best_iteration": best_iteration,
         "best_code_path": None if best_code_path is None else str(best_code_path),
+        "splits_path": str(splits_path),
     }
