@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 BASE_DIR = Path(__file__).resolve().parents[1]
 
 CONFIG = {
@@ -9,8 +8,8 @@ CONFIG = {
         "train": BASE_DIR / "data" / "train.csv",
         "test": BASE_DIR / "data" / "test.csv",
         "submission_sample": BASE_DIR / "data" / "sample_submition.csv",
-        "data_splits": BASE_DIR / "artifacts" / "data_splits",
         "artifacts": BASE_DIR / "artifacts",
+        "data_splits": BASE_DIR / "artifacts" / "data_splits",
         "generated_code": BASE_DIR / "artifacts" / "generated_code",
         "logs": BASE_DIR / "artifacts" / "logs",
         "metrics": BASE_DIR / "artifacts" / "metrics",
@@ -24,11 +23,11 @@ CONFIG = {
     "run": {
         "target_col": "target",
         "id_col": "_id",
-        "max_iters": 3,
-        "metric_name": "roc_auc",
+        "max_iters": 4,
+        "metric_name": "rmse",
         "random_seed": 42,
-        "n_folds": 5,
-        "executor_timeout": 300,
+        "valid_size": 0.2,
+        "executor_timeout": 240,
     },
 }
 

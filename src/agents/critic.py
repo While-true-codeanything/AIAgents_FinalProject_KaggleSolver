@@ -20,6 +20,7 @@ Available libraries:
 - xgboost
 - requests
 
+
 Rules:
 - suggest only improvements compatible with these libraries
 - do not suggest LightGBM or any unavailable library
@@ -28,11 +29,14 @@ Rules:
 - if the code failed, focus only on the failure cause
 - if the code worked, suggest at most 3 small improvements
 - be concise
+- The local validation uses one fixed holdout split saved in artifacts/data_splits.
+- Suggest improvements that keep this evaluation protocol unchanged.
+- Do not suggest creating new random train/validation splits.
 
 Runtime constraint:
 - The full script must stay within 300 seconds.
 - Suggest only improvements that are realistic within this runtime budget.
-- Prefer small, targeted improvements over heavier models or more expensive validation.
+- Prefer small, targeted improvements over heavier models.
 
 Return your answer in this format:
 
@@ -46,7 +50,7 @@ IMPROVEMENTS:
 - ...
 
 DECISION:
-improve
+improve/rework
 """
 
     stdout_text = execution_result.get("stdout", "")

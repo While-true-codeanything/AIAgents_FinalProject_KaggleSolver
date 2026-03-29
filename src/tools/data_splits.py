@@ -1,43 +1,38 @@
-import json
 from pathlib import Path
 
-import numpy as np
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import train_test_split
 
 
-def build_cv_splits(train_df, target_col, n_folds=5, random_state=42, task_type="regression"):
-    y = train_df[target_col].values
-    indices = np.arange(len(train_df))
-
-    folds = []
+def save_train_valid_split(
+    train_df,
+    output_dir,
+    target_col,
+    valid_size=0.2,
+    random_state=42,
+    task_type="regression",
+):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     if task_type == "classification":
-        splitter = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=random_state)
-        split_iter = splitter.split(indices, y)
+        train_part, valid_part = train_test_split(
+            train_df,
+            test_size=valid_size,
+            random_state=random_state,
+            stratify=train_df[target_col],
+        )
     else:
-        splitter = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
-        split_iter = splitter.split(indices)
-
-    for fold_id, (train_idx, valid_idx) in enumerate(split_iter):
-        folds.append(
-            {
-                "fold": fold_id,
-                "train_idx": train_idx.tolist(),
-                "valid_idx": valid_idx.tolist(),
-            }
+        train_part, valid_part = train_test_split(
+            train_df,
+            test_size=valid_size,
+            random_state=random_state,
+            shuffle=True,
         )
 
-    return {"folds": folds}
+    train_path = output_dir / "train_inner.csv"
+    valid_path = output_dir / "valid_holdout.csv"
 
+    train_part.to_csv(train_path, index=False)
+    valid_part.to_csv(valid_path, index=False)
 
-def save_cv_splits(splits, output_path):
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(splits, f, ensure_ascii=False)
-
-
-def load_cv_splits(splits_path):
-    with open(splits_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return train_path, valid_path

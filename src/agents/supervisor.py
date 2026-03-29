@@ -1,7 +1,7 @@
 from src.config import CONFIG, ensure_directories
 from src.tools.dataset_inputer import load_data, get_dataset_info, format_dataset_info
 from src.tools.code_executor import execute_code
-from src.tools.data_splits import build_cv_splits, save_cv_splits
+from src.tools.data_splits import save_train_valid_split
 from src.agents.explorer import run_explorer
 from src.agents.engineer import run_engineer
 from src.agents.critic import run_critic
@@ -23,20 +23,22 @@ def run_supervisor():
     )
     dataset_info_text = format_dataset_info(dataset_info)
 
-    splits_path = CONFIG["paths"]["data_splits"] / "cv_splits.json"
+    split_dir = CONFIG["paths"]["data_splits"]
+    train_inner_path = split_dir / "train_inner.csv"
+    valid_holdout_path = split_dir / "valid_holdout.csv"
 
-    if not splits_path.exists():
-        cv_splits = build_cv_splits(
+    if not train_inner_path.exists() or not valid_holdout_path.exists():
+        save_train_valid_split(
             train_df=train_df,
+            output_dir=split_dir,
             target_col=CONFIG["run"]["target_col"],
-            n_folds=CONFIG["run"]["n_folds"],
+            valid_size=CONFIG["run"]["valid_size"],
             random_state=CONFIG["run"]["random_seed"],
             task_type="regression",
         )
-        save_cv_splits(cv_splits, splits_path)
-        print(f"Saved CV splits to: {splits_path}")
+        print(f"Saved train/valid split to: {split_dir}")
     else:
-        print(f"Using existing CV splits: {splits_path}")
+        print(f"Using existing split files from: {split_dir}")
 
     print("=== EXPLORER ===")
     explorer_output = run_explorer(
@@ -115,7 +117,7 @@ def run_supervisor():
 
     print("\n=== FINAL RESULT ===")
     print(f"Best iteration: {best_iteration}")
-    print(f"Best CV score: {None if best_result is None else best_result.get('cv_score')}")
+    print(f"Best score: {None if best_result is None else best_result.get('cv_score')}")
     print(f"Best script path: {best_code_path}")
 
     return {
@@ -125,5 +127,6 @@ def run_supervisor():
         "best_result": best_result,
         "best_iteration": best_iteration,
         "best_code_path": None if best_code_path is None else str(best_code_path),
-        "splits_path": str(splits_path),
+        "train_inner_path": str(train_inner_path),
+        "valid_holdout_path": str(valid_holdout_path),
     }
