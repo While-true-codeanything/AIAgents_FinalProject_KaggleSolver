@@ -6,6 +6,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from kaggle_solver.models import ModelCapabilities
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -31,6 +33,13 @@ def _env_float(name: str, default: float) -> float:
     return float(os.getenv(name, str(default)))
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass(frozen=True)
 class PathSettings:
     data_dir: Path
@@ -44,6 +53,7 @@ class PathSettings:
     metrics: Path
     submissions: Path
     submission_current: Path
+    iteration_reports: Path
 
     @property
     def managed_directories(self) -> tuple[Path, ...]:
@@ -55,6 +65,7 @@ class PathSettings:
             self.metrics,
             self.submissions,
             self.submission_current,
+            self.iteration_reports,
         )
 
 
@@ -81,7 +92,16 @@ class ModelSettings:
 class LLMSettings:
     api_key: str
     base_url: str
-    model_info: dict[str, bool | str]
+    capabilities: ModelCapabilities
+
+    @property
+    def model_info(self) -> dict[str, bool | str]:
+        return self.capabilities.to_model_info()
+
+
+@dataclass(frozen=True)
+class LoggingSettings:
+    level: str
 
 
 @dataclass(frozen=True)
@@ -91,6 +111,7 @@ class AppSettings:
     run: RunSettings
     models: ModelSettings
     llm: LLMSettings
+    logging: LoggingSettings
 
 
 def ensure_directories(paths: PathSettings) -> None:
@@ -117,6 +138,7 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         metrics=artifacts_dir / "metrics",
         submissions=artifacts_dir / "submissions",
         submission_current=artifacts_dir / "submissions" / "current_iteration",
+        iteration_reports=artifacts_dir / "logs" / "iterations",
     )
 
     run = RunSettings(
@@ -139,13 +161,13 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
     llm = LLMSettings(
         api_key=_env_str("LLM_API_KEY"),
         base_url=_env_str("LLM_BASE_URL"),
-        model_info={
-            "vision": False,
-            "function_calling": False,
-            "json_output": False,
-            "family": "unknown",
-            "structured_output": False,
-        },
+        capabilities=ModelCapabilities(
+            structured_output=_env_bool("LLM_STRUCTURED_OUTPUTS_ENABLED", True),
+        ),
+    )
+
+    logging_settings = LoggingSettings(
+        level=os.getenv("KAGGLE_SOLVER_LOG_LEVEL", "INFO"),
     )
 
     return AppSettings(
@@ -154,4 +176,5 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         run=run,
         models=models,
         llm=llm,
+        logging=logging_settings,
     )

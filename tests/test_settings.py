@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from kaggle_solver.models import ModelCapabilities
 from kaggle_solver.settings import load_settings
 
 
@@ -32,6 +33,8 @@ def test_load_settings_from_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert settings.models.engineer == "custom-engineer"
     assert settings.run.max_iters == 3
     assert settings.run.valid_size == 0.25
+    assert settings.llm.capabilities == ModelCapabilities()
+    assert settings.paths.iteration_reports.name == "iterations"
 
 
 def test_load_settings_requires_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:

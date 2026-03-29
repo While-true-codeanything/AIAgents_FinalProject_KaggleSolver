@@ -1,29 +1,35 @@
 from __future__ import annotations
 
 import asyncio
-import re
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 
-from kaggle_solver.orchestrator import SolverAgents, SolverOrchestrator
-from kaggle_solver.settings import AppSettings, LLMSettings, ModelSettings, PathSettings, RunSettings
+from kaggle_solver.agents import AgentRunResult
+from kaggle_solver.models import CriticReview, ExplorerPlan, ModelCapabilities
+from kaggle_solver.orchestrator import SolverOrchestrator
+from kaggle_solver.settings import (
+    AppSettings,
+    LLMSettings,
+    LoggingSettings,
+    ModelSettings,
+    PathSettings,
+    RunSettings,
+)
 
 
-@dataclass
-class CallbackAgent:
-    callback: Callable[[str, int], str]
-    prompts: list[str]
+class FakeAgentRegistry:
+    def __init__(self, callbacks):
+        self.callbacks = callbacks
+        self.prompt_contexts: dict[str, list[object]] = {}
 
-    def __init__(self, callback) -> None:
-        self.callback = callback
-        self.prompts = []
+    async def run_agent(self, role: str, prompt_context: object) -> AgentRunResult:
+        role_calls = self.prompt_contexts.setdefault(role, [])
+        role_calls.append(prompt_context)
+        return self.callbacks[role](prompt_context, len(role_calls))
 
-    async def run(self, prompt: str) -> str:
-        self.prompts.append(prompt)
-        return self.callback(prompt, len(self.prompts))
+    async def aclose(self) -> None:
+        return None
 
 
 def _write_dataset(base_dir: Path) -> PathSettings:
@@ -69,6 +75,7 @@ def _write_dataset(base_dir: Path) -> PathSettings:
         metrics=artifacts_dir / "metrics",
         submissions=artifacts_dir / "submissions",
         submission_current=artifacts_dir / "submissions" / "current_iteration",
+        iteration_reports=artifacts_dir / "logs" / "iterations",
     )
 
 
@@ -94,14 +101,9 @@ def _build_settings(base_dir: Path, max_iters: int) -> AppSettings:
         llm=LLMSettings(
             api_key="test-key",
             base_url="https://example.com/v1",
-            model_info={
-                "vision": False,
-                "function_calling": False,
-                "json_output": False,
-                "family": "unknown",
-                "structured_output": False,
-            },
+            capabilities=ModelCapabilities(),
         ),
+        logging=LoggingSettings(level="INFO"),
     )
 
 
@@ -124,27 +126,71 @@ print("CV_SCORE={score}")
 
 def test_orchestrator_keeps_best_submission(tmp_path: Path) -> None:
     settings = _build_settings(tmp_path, max_iters=2)
+    explorer_plan = ExplorerPlan(
+        task_type="regression",
+        target_type="numeric",
+        baseline_model="catboost",
+        main_feature_groups=["categorical", "numeric"],
+        preprocessing=["fill missing values"],
+        feature_engineering_ideas=["days since last review"],
+        validation_strategy="fixed holdout",
+        risks=["runtime"],
+    )
+    critic_review = CriticReview(
+        main_problems=["could be slightly better"],
+        improvements=["small tuning"],
+        decision="improve",
+    )
 
-    explorer = CallbackAgent(lambda prompt, _: "baseline plan")
-    critic = CallbackAgent(lambda prompt, _: "improve slightly")
+    def explorer_callback(prompt_context: object, _: int) -> AgentRunResult:
+        return AgentRunResult(
+            role="explorer",
+            prompt_text="explorer prompt",
+            raw_output=explorer_plan.model_dump_json(),
+            message_type="StructuredMessage",
+            structured_output=explorer_plan,
+        )
 
-    def engineer_callback(prompt: str, call_count: int) -> str:
-        match = re.search(r"Save submission to this exact path:\n(.+)", prompt)
-        assert match is not None
-        submission_path = match.group(1).strip()
-        return _submission_script(submission_path, 0.8 if call_count == 1 else 0.5)
+    def critic_callback(prompt_context: object, _: int) -> AgentRunResult:
+        return AgentRunResult(
+            role="critic",
+            prompt_text="critic prompt",
+            raw_output=critic_review.model_dump_json(),
+            message_type="StructuredMessage",
+            structured_output=critic_review,
+        )
 
-    engineer = CallbackAgent(engineer_callback)
-    debugger = CallbackAgent(lambda prompt, _: "")
+    def engineer_callback(prompt_context: object, call_count: int) -> AgentRunResult:
+        submission_path = prompt_context.submission.submission_output_path
+        score = 0.8 if call_count == 1 else 0.5
+        code = _submission_script(submission_path, score)
+        return AgentRunResult(
+            role="engineer",
+            prompt_text="engineer prompt",
+            raw_output=code,
+            message_type="TextMessage",
+        )
+
+    def debugger_callback(prompt_context: object, _: int) -> AgentRunResult:
+        return AgentRunResult(
+            role="debugger",
+            prompt_text="debugger prompt",
+            raw_output="",
+            message_type="TextMessage",
+        )
+
+    registry = FakeAgentRegistry(
+        {
+            "explorer": explorer_callback,
+            "engineer": engineer_callback,
+            "critic": critic_callback,
+            "debugger": debugger_callback,
+        }
+    )
 
     orchestrator = SolverOrchestrator(
         settings=settings,
-        agents=SolverAgents(
-            explorer=explorer,
-            engineer=engineer,
-            critic=critic,
-            debugger=debugger,
-        ),
+        agent_registry=registry,
     )
 
     result = asyncio.run(orchestrator.run())
@@ -154,26 +200,63 @@ def test_orchestrator_keeps_best_submission(tmp_path: Path) -> None:
     assert result.best_result.cv_score == 0.5
     assert result.best_submission_path is not None
     assert Path(result.best_submission_path).exists()
+    assert result.explorer_plan.baseline_model == "catboost"
+    assert Path(settings.paths.iteration_reports / "iteration_1.json").exists()
 
 
 def test_orchestrator_uses_debugger_when_execution_fails(tmp_path: Path) -> None:
     settings = _build_settings(tmp_path, max_iters=1)
-
-    explorer = CallbackAgent(lambda prompt, _: "baseline plan")
-    engineer = CallbackAgent(lambda prompt, _: "raise RuntimeError('boom')")
+    explorer_plan = ExplorerPlan(
+        task_type="regression",
+        target_type="numeric",
+        baseline_model="catboost",
+        main_feature_groups=["categorical", "numeric"],
+        preprocessing=["fill missing values"],
+        feature_engineering_ideas=["days since last review"],
+        validation_strategy="fixed holdout",
+        risks=["runtime"],
+    )
 
     expected_submission = settings.paths.submission_current / "submission_iter_1.csv"
-    debugger = CallbackAgent(lambda prompt, _: _submission_script(str(expected_submission), 0.33))
-    critic = CallbackAgent(lambda prompt, _: "unused")
+
+    registry = FakeAgentRegistry(
+        {
+            "explorer": lambda prompt_context, _: AgentRunResult(
+                role="explorer",
+                prompt_text="explorer prompt",
+                raw_output=explorer_plan.model_dump_json(),
+                message_type="StructuredMessage",
+                structured_output=explorer_plan,
+            ),
+            "engineer": lambda prompt_context, _: AgentRunResult(
+                role="engineer",
+                prompt_text="engineer prompt",
+                raw_output="raise RuntimeError('boom')",
+                message_type="TextMessage",
+            ),
+            "critic": lambda prompt_context, _: AgentRunResult(
+                role="critic",
+                prompt_text="critic prompt",
+                raw_output='{"main_problems":[],"improvements":[],"decision":"improve"}',
+                message_type="StructuredMessage",
+                structured_output=CriticReview(
+                    main_problems=[],
+                    improvements=[],
+                    decision="improve",
+                ),
+            ),
+            "debugger": lambda prompt_context, _: AgentRunResult(
+                role="debugger",
+                prompt_text="debugger prompt",
+                raw_output=_submission_script(str(expected_submission), 0.33),
+                message_type="TextMessage",
+            ),
+        }
+    )
 
     orchestrator = SolverOrchestrator(
         settings=settings,
-        agents=SolverAgents(
-            explorer=explorer,
-            engineer=engineer,
-            critic=critic,
-            debugger=debugger,
-        ),
+        agent_registry=registry,
     )
 
     result = asyncio.run(orchestrator.run())
@@ -181,4 +264,4 @@ def test_orchestrator_uses_debugger_when_execution_fails(tmp_path: Path) -> None
     assert result.best_iteration == 1
     assert result.best_result is not None
     assert result.best_result.cv_score == 0.33
-    assert len(debugger.prompts) == 1
+    assert len(registry.prompt_contexts["debugger"]) == 1
