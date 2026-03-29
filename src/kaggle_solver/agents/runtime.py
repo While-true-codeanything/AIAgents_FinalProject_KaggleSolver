@@ -26,6 +26,7 @@ def build_model_client(model_name: str, settings: AppSettings | None = None) -> 
         api_key=app_settings.llm.api_key,
         base_url=app_settings.llm.base_url,
         model_info=app_settings.llm.model_info,
+        timeout=app_settings.llm.request_timeout_seconds,
     )
 
 

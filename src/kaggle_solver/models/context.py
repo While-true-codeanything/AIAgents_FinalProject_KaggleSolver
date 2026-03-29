@@ -31,7 +31,7 @@ class ExecutionSnapshot(BaseModel):
     stdout: str
     stderr: str
     return_code: int
-    cv_score: float | None
+    score: float | None
     script_path: str
     succeeded: bool
 
@@ -41,10 +41,14 @@ class ExecutionSnapshot(BaseModel):
             stdout=execution_result.stdout,
             stderr=execution_result.stderr,
             return_code=execution_result.return_code,
-            cv_score=execution_result.cv_score,
+            score=execution_result.score,
             script_path=execution_result.script_path,
             succeeded=execution_result.succeeded,
         )
+
+    @property
+    def cv_score(self) -> float | None:
+        return self.score
 
 
 class ExecutionContext(BaseModel):

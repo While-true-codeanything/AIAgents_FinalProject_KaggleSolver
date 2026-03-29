@@ -75,6 +75,7 @@ class RunSettings:
     id_col: str
     max_iters: int
     metric_name: str
+    main_metric: str
     random_seed: int
     valid_size: float
     executor_timeout: int
@@ -93,6 +94,7 @@ class LLMSettings:
     api_key: str
     base_url: str
     capabilities: ModelCapabilities
+    request_timeout_seconds: float
 
     @property
     def model_info(self) -> dict[str, bool | str]:
@@ -144,8 +146,9 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
     run = RunSettings(
         target_col=os.getenv("KAGGLE_SOLVER_TARGET_COL", "target"),
         id_col=os.getenv("KAGGLE_SOLVER_ID_COL", "_id"),
-        max_iters=_env_int("KAGGLE_SOLVER_MAX_ITERS", 10),
+        max_iters=_env_int("KAGGLE_SOLVER_MAX_ITERS", 4),
         metric_name=os.getenv("KAGGLE_SOLVER_METRIC_NAME", "rmse"),
+        main_metric=os.getenv("KAGGLE_SOLVER_MAIN_METRIC", "MSE"),
         random_seed=_env_int("KAGGLE_SOLVER_RANDOM_SEED", 42),
         valid_size=_env_float("KAGGLE_SOLVER_VALID_SIZE", 0.2),
         executor_timeout=_env_int("KAGGLE_SOLVER_EXECUTOR_TIMEOUT", 400),
@@ -164,6 +167,7 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         capabilities=ModelCapabilities(
             structured_output=_env_bool("LLM_STRUCTURED_OUTPUTS_ENABLED", True),
         ),
+        request_timeout_seconds=_env_float("LLM_REQUEST_TIMEOUT_SECONDS", 180.0),
     )
 
     logging_settings = LoggingSettings(

@@ -38,6 +38,7 @@ def _build_settings(base_dir: Path) -> AppSettings:
             id_col="_id",
             max_iters=3,
             metric_name="rmse",
+            main_metric="MSE",
             random_seed=42,
             valid_size=0.2,
             executor_timeout=120,
@@ -52,6 +53,7 @@ def _build_settings(base_dir: Path) -> AppSettings:
             api_key="test-key",
             base_url="https://example.com/v1",
             capabilities=ModelCapabilities(),
+            request_timeout_seconds=180.0,
         ),
         logging=LoggingSettings(level="INFO"),
     )

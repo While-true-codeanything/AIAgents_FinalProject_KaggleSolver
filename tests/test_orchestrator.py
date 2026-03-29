@@ -88,6 +88,7 @@ def _build_settings(base_dir: Path, max_iters: int) -> AppSettings:
             id_col="_id",
             max_iters=max_iters,
             metric_name="rmse",
+            main_metric="MSE",
             random_seed=42,
             valid_size=0.25,
             executor_timeout=30,
@@ -102,6 +103,7 @@ def _build_settings(base_dir: Path, max_iters: int) -> AppSettings:
             api_key="test-key",
             base_url="https://example.com/v1",
             capabilities=ModelCapabilities(),
+            request_timeout_seconds=180.0,
         ),
         logging=LoggingSettings(level="INFO"),
     )
@@ -120,7 +122,7 @@ sample[target_col] = {score}
 output_path = Path(r"{escaped_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 sample.to_csv(output_path, index=False)
-print("CV_SCORE={score}")
+print("SCORE={score}")
 """.strip()
 
 
@@ -197,7 +199,7 @@ def test_orchestrator_keeps_best_submission(tmp_path: Path) -> None:
 
     assert result.best_iteration == 2
     assert result.best_result is not None
-    assert result.best_result.cv_score == 0.5
+    assert result.best_result.score == 0.5
     assert result.best_submission_path is not None
     assert Path(result.best_submission_path).exists()
     assert result.explorer_plan.baseline_model == "catboost"
@@ -263,5 +265,5 @@ def test_orchestrator_uses_debugger_when_execution_fails(tmp_path: Path) -> None
 
     assert result.best_iteration == 1
     assert result.best_result is not None
-    assert result.best_result.cv_score == 0.33
+    assert result.best_result.score == 0.33
     assert len(registry.prompt_contexts["debugger"]) == 1
