@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kaggle-solver"
+version = "0.1.0"
+description = "AutoGen-powered Kaggle solver orchestrator for tabular competitions."
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "autogen-agentchat>=0.7.5",
+    "autogen-ext[openai]>=0.7.5",
+    "catboost>=1.2.10",
+    "numpy>=2.3.0",
+    "pandas>=2.3.0",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.0",
+    "scikit-learn>=1.7.0",
+    "xgboost>=3.2.0",
+]
+
+[project.scripts]
+kaggle-solver = "kaggle_solver.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "ruff>=0.11.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kaggle_solver"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "live: tests that call a real LLM endpoint",
+]
