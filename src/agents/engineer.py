@@ -2,10 +2,10 @@ from src.config import ensure_directories
 from src.tools.llm_api_connector import ask_model_response
 
 
-def run_engineer(dataset_info_text, explorer_output, model, critic_feedback=None):
+def run_engineer(dataset_info_text, explorer_output, model, submission_output_path, critic_feedback=None):
     ensure_directories()
 
-    system_prompt = """
+    system_prompt = f"""
 You are a strong ML engineer working on a tabular machine learning competition.
 
 Write one complete Python script.
@@ -46,11 +46,14 @@ Validation rules:
   - artifacts/data_splits/train_inner.csv
   - artifacts/data_splits/valid_holdout.csv
 - The validation score must be computed on valid_holdout only.
+- save submission to this exact path: {submission_output_path}
 
 Submission rules:
 - After local validation, fit final model on full data/train.csv
 - Then predict on data/test.csv
-- Build submission strictly from data/sample_submition.csv
+- Build submission strictly from data/sample_submition.csv/ Use it structure and data/test.csv predictions
+- Save submission to this exact path:
+  {submission_output_path}
 - Do not use test["_id"] as submission ID
 - Preserve the first column from sample_submition.csv exactly as-is
 - Fill only the prediction column
@@ -96,6 +99,10 @@ Dataset summary:
 
 Explorer plan:
 {explorer_output}
+
+Submission output path for this iteration:
+{submission_output_path}
+
 """
 
     if critic_feedback:

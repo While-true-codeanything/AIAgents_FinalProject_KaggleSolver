@@ -1,3 +1,5 @@
+import shutil
+
 from src.config import CONFIG, ensure_directories
 from src.tools.dataset_inputer import load_data, get_dataset_info, format_dataset_info
 from src.tools.code_executor import execute_code
@@ -57,13 +59,20 @@ def run_supervisor():
     best_code = None
     best_iteration = None
     best_score = None
+    best_submission_path = CONFIG["paths"]["submissions"] / "best_submission.csv"
 
     for iteration in range(1, max_iters + 1):
         print(f"\n=== ENGINEER: ITERATION {iteration} ===")
+
+        iteration_submission_path = (
+            CONFIG["paths"]["submission_current"] / f"submission_iter_{iteration}.csv"
+        )
+
         code_text = run_engineer(
             dataset_info_text=dataset_info_text,
             explorer_output=explorer_output,
             model=CONFIG["models"]["engineer"],
+            submission_output_path=str(iteration_submission_path),
             critic_feedback=critic_feedback,
         )
 
@@ -87,14 +96,24 @@ def run_supervisor():
                 "code_text": code_text,
                 "code_path": str(code_path),
                 "execution_result": execution_result,
+                "submission_path": str(iteration_submission_path),
             }
         )
 
+        improved = False
         if current_ok and (best_score is None or current_score < best_score):
             best_score = current_score
             best_result = execution_result
             best_code = code_text
             best_iteration = iteration
+            improved = True
+
+            if iteration_submission_path.exists():
+                shutil.copyfile(iteration_submission_path, best_submission_path)
+                print(f"Updated best submission: {best_submission_path}")
+
+        if not improved:
+            print("Best submission unchanged.")
 
         if iteration < max_iters:
             critic_feedback = run_critic(
@@ -119,6 +138,7 @@ def run_supervisor():
     print(f"Best iteration: {best_iteration}")
     print(f"Best score: {None if best_result is None else best_result.get('cv_score')}")
     print(f"Best script path: {best_code_path}")
+    print(f"Best submission path: {best_submission_path if best_submission_path.exists() else None}")
 
     return {
         "dataset_info_text": dataset_info_text,
@@ -127,6 +147,7 @@ def run_supervisor():
         "best_result": best_result,
         "best_iteration": best_iteration,
         "best_code_path": None if best_code_path is None else str(best_code_path),
+        "best_submission_path": str(best_submission_path) if best_submission_path.exists() else None,
         "train_inner_path": str(train_inner_path),
         "valid_holdout_path": str(valid_holdout_path),
     }

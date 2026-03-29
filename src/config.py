@@ -14,6 +14,7 @@ CONFIG = {
         "logs": BASE_DIR / "artifacts" / "logs",
         "metrics": BASE_DIR / "artifacts" / "metrics",
         "submissions": BASE_DIR / "artifacts" / "submissions",
+        "submission_current": BASE_DIR / "artifacts" / "submissions" / "current_iteration",
     },
     "models": {
         "explorer": "qwen/qwen3-max-thinking",
