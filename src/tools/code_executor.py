@@ -21,6 +21,16 @@ def extract_cv_score(stdout_text):
     return None
 
 
+def clean_code(code):
+    lines = code.splitlines()
+    start = 0
+    for i, line in enumerate(lines):
+        if line.strip().startswith("import") or line.strip().startswith("from"):
+            start = i
+            break
+    return "\n".join(lines[start:])
+
+
 def clean_code_text(code_text):
     code_text = code_text.strip()
 
@@ -37,6 +47,8 @@ def clean_code_text(code_text):
 
 def execute_code(code_text, file_path, timeout=120):
     code_text = clean_code_text(code_text)
+    code_text = clean_code(code_text)
+
     save_code(code_text, file_path)
 
     result = subprocess.run(

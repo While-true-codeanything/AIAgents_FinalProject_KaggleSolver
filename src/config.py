@@ -25,7 +25,7 @@ CONFIG = {
     "run": {
         "target_col": "target",
         "id_col": "_id",
-        "max_iters": 10,
+        "max_iters": 4,
         "metric_name": "rmse",
         "random_seed": 42,
         "valid_size": 0.2,
