@@ -14,8 +14,8 @@ def save_code(code_text, file_path):
         f.write(code_text)
 
 
-def extract_cv_score(stdout_text):
-    match = re.search(r"CV_SCORE=([-+]?\d*\.?\d+)", stdout_text)
+def extract_score(stdout_text):
+    match = re.search(r"SCORE=([-+]?\d*\.?\d+)", stdout_text)
     if match:
         return float(match.group(1))
     return None
@@ -62,12 +62,12 @@ def execute_code(code_text, file_path, timeout=120):
     stdout = result.stdout
     stderr = result.stderr
     return_code = result.returncode
-    cv_score = extract_cv_score(stdout)
+    score = extract_score(stdout)
 
     return {
         "stdout": stdout,
         "stderr": stderr,
         "return_code": return_code,
-        "cv_score": cv_score,
+        "score": score,
         "script_path": str(file_path),
     }

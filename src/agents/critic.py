@@ -57,7 +57,7 @@ improve/rework
     stdout_text = execution_result.get("stdout", "")
     stderr_text = execution_result.get("stderr", "")
     return_code = execution_result.get("return_code", None)
-    cv_score = execution_result.get("cv_score", None)
+    score = execution_result.get("score", None)
 
     user_prompt = f"""
 Dataset summary:
@@ -71,7 +71,7 @@ Generated code:
 
 Execution result:
 return_code={return_code}
-cv_score={cv_score}
+score={score}
 
 STDOUT:
 {stdout_text}
@@ -86,7 +86,7 @@ STDERR:
         system_prompt=system_prompt,
         temperature=0.2,
         max_tokens=2000,
-        timeout=60,
+        timeout=180,
     )
 
     return response["text"].strip()

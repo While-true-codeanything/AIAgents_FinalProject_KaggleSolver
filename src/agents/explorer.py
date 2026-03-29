@@ -28,6 +28,16 @@ Rules:
 - do not suggest lightgbm or any unavailable library
 - do not write code
 
+Preprocessing must be consistent:
+- Fit preprocessing ONLY on train_inner
+- Save all statistics:
+  - medians
+  - rare category mapping
+  - reference date
+- Reuse SAME stats for valid_holdout and test
+
+Never recompute stats on validation or test
+
 Runtime constraint:
 - The final training script must fit comfortably within {CONFIG['run']['executor_timeout']} seconds total runtime.
 - Prefer practical baseline solutions that are accurate enough and efficient.
@@ -72,7 +82,7 @@ Analyze the following dataset summary and propose a baseline ML plan.
         system_prompt=system_prompt,
         temperature=0.2,
         max_tokens=2000,
-        timeout=60,
+        timeout=180,
     )
 
     return response["text"]

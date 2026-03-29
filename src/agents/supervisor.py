@@ -136,7 +136,7 @@ def run_supervisor():
         print(f"\n=== EXECUTION RESULT: ITERATION {iteration} ===")
         print(execution_result)
 
-        current_score = execution_result.get("cv_score")
+        current_score = execution_result.get("score")
         current_ok = execution_result.get("return_code") == 0 and current_score is not None
 
         all_results.append(
@@ -185,7 +185,7 @@ def run_supervisor():
 
     print("\n=== FINAL RESULT ===")
     print(f"Best iteration: {best_iteration}")
-    print(f"Best score: {None if best_result is None else best_result.get('cv_score')}")
+    print(f"Best score: {None if best_result is None else best_result.get('score')}")
     print(f"Best script path: {best_code_path}")
     print(f"Best submission path: {best_submission_path if best_submission_path.exists() else None}")
 
