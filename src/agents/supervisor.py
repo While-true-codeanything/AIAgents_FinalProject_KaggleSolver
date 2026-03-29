@@ -7,7 +7,44 @@ from src.tools.data_splits import save_train_valid_split
 from src.agents.explorer import run_explorer
 from src.agents.engineer import run_engineer
 from src.agents.critic import run_critic
+from src.agents.debugger import run_debugger
 
+
+def try_debug_code(dataset_info_text, explorer_output, code_text, execution_result, debugger_model, code_path, timeout, max_debug_attempts=3):
+    current_code = code_text
+    current_result = execution_result
+
+    for debug_attempt in range(1, max_debug_attempts + 1):
+        if current_result.get("return_code") == 0:
+            break
+
+        print(f"\n=== DEBUGGER: ATTEMPT {debug_attempt} ===")
+
+        fixed_code = run_debugger(
+            dataset_info_text=dataset_info_text,
+            explorer_output=explorer_output,
+            code_text=current_code,
+            execution_result=current_result,
+            model=debugger_model,
+        )
+
+        debug_code_path = str(code_path).replace(".py", f"_debug_{debug_attempt}.py")
+
+        current_code = fixed_code
+        current_result = execute_code(
+            code_text=current_code,
+            file_path=debug_code_path,
+            timeout=timeout,
+        )
+
+        print(f"\n=== DEBUG RESULT: ATTEMPT {debug_attempt} ===")
+        print(current_result)
+
+        if current_result.get("return_code") == 0:
+            print("Debugger fixed the code successfully.")
+            break
+
+    return current_code, current_result
 
 def run_supervisor():
     ensure_directories()
@@ -83,6 +120,18 @@ def run_supervisor():
             file_path=code_path,
             timeout=timeout,
         )
+
+        if execution_result.get("return_code") != 0:
+            code_text, execution_result = try_debug_code(
+                dataset_info_text=dataset_info_text,
+                explorer_output=explorer_output,
+                code_text=code_text,
+                execution_result=execution_result,
+                debugger_model=CONFIG["models"]["debugger"],
+                code_path=code_path,
+                timeout=timeout,
+                max_debug_attempts=3,
+            )
 
         print(f"\n=== EXECUTION RESULT: ITERATION {iteration} ===")
         print(execution_result)

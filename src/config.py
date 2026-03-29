@@ -20,15 +20,16 @@ CONFIG = {
         "explorer": "qwen/qwen3-max-thinking",
         "engineer": "qwen/qwen3-coder-next",
         "critic": "qwen/qwen3-max-thinking",
+        "debugger": "qwen/qwen3-coder-next",
     },
     "run": {
         "target_col": "target",
         "id_col": "_id",
-        "max_iters": 4,
+        "max_iters": 10,
         "metric_name": "rmse",
         "random_seed": 42,
         "valid_size": 0.2,
-        "executor_timeout": 240,
+        "executor_timeout": 300,
     },
 }
 
