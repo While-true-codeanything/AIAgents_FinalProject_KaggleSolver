@@ -8,7 +8,9 @@ from kaggle_solver.models import ModelCapabilities
 from kaggle_solver.settings import load_settings
 
 
-def test_load_settings_from_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_settings_from_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(
         "\n".join(
@@ -31,7 +33,7 @@ def test_load_settings_from_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert settings.llm.api_key == "test-key"
     assert settings.llm.base_url == "https://example.com/v1"
     assert settings.models.engineer == "custom-engineer"
-    assert settings.run.max_iters == 3
+    assert settings.run.max_iters == 5
     assert settings.run.valid_size == 0.25
     assert settings.llm.capabilities == ModelCapabilities()
     assert settings.paths.iteration_reports.name == "iterations"

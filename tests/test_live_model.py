@@ -8,6 +8,7 @@ from autogen_core.models import UserMessage
 
 from kaggle_solver.agents import AgentRegistry, build_model_client
 from kaggle_solver.models import DatasetContext
+from kaggle_solver.rag import RAGIndexManager, RAGSearchService
 from kaggle_solver.settings import load_settings
 
 
@@ -58,3 +59,27 @@ def test_live_explorer_structured_output() -> None:
             await registry.aclose()
 
     asyncio.run(_run())
+
+
+@pytest.mark.live
+@pytest.mark.skipif(
+    not os.getenv("RUN_LIVE_TESTS")
+    or not os.getenv("RAG_ENABLED")
+    or not os.getenv("EMBEDDING_API_KEY")
+    or not os.getenv("EMBEDDING_BASE_URL")
+    or not os.getenv("EMBEDDING_MODEL"),
+    reason="Set RUN_LIVE_TESTS=1, RAG_ENABLED=true, and embedding env vars to run the live RAG smoke test.",
+)
+def test_live_rag_search_roundtrip() -> None:
+    settings = load_settings()
+    if not settings.rag.enabled:
+        pytest.skip("RAG_ENABLED is not true.")
+
+    manager = RAGIndexManager(settings=settings)
+    manager.build_or_update_index(force=False)
+    search_service = RAGSearchService(settings=settings, index_manager=manager)
+
+    results = search_service.search("tabular baseline with catboost", top_k=1)
+
+    assert results.total_results >= 1
+    assert results.results[0].snippet

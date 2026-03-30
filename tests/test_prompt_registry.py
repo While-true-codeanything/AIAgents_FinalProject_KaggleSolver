@@ -6,10 +6,12 @@ from kaggle_solver.models import CriticReview, DatasetContext, ExplorerPlan, Mod
 from kaggle_solver.prompts import PromptRegistry, build_engineer_iteration_context
 from kaggle_solver.settings import (
     AppSettings,
+    EmbeddingSettings,
     LLMSettings,
     LoggingSettings,
     ModelSettings,
     PathSettings,
+    RAGSettings,
     RunSettings,
 )
 
@@ -32,6 +34,7 @@ def _build_settings(base_dir: Path) -> AppSettings:
             submissions=artifacts / "submissions",
             submission_current=artifacts / "submissions" / "current_iteration",
             iteration_reports=artifacts / "logs" / "iterations",
+            rag_index=artifacts / "rag",
         ),
         run=RunSettings(
             target_col="target",
@@ -54,6 +57,24 @@ def _build_settings(base_dir: Path) -> AppSettings:
             base_url="https://example.com/v1",
             capabilities=ModelCapabilities(),
             request_timeout_seconds=180.0,
+        ),
+        embedding=EmbeddingSettings(
+            api_key="embed-key",
+            base_url="https://embed.example.com/v1",
+            model="text-embedding-3-small",
+            dimension=8,
+            request_timeout_seconds=30.0,
+        ),
+        rag=RAGSettings(
+            enabled=False,
+            context_csv_path=base_dir / "rag_context.csv",
+            qdrant_url="http://localhost:6333",
+            qdrant_collection="kaggle_writeups",
+            qdrant_api_key=None,
+            qdrant_timeout_seconds=30.0,
+            top_k=5,
+            max_top_k=5,
+            auto_reindex=True,
         ),
         logging=LoggingSettings(level="INFO"),
     )
@@ -80,6 +101,7 @@ def test_prompt_registry_renders_consistent_sections(tmp_path: Path) -> None:
     assert "Constraints:" in system_prompt
     assert "Required output contract:" in system_prompt
     assert "ExplorerPlan" in system_prompt
+    assert "kaggle writeups search tool" in system_prompt
     assert "Task:" in user_prompt
     assert "Available context:" in user_prompt
 

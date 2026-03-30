@@ -132,6 +132,7 @@ class SolverOrchestrator:
                 sample_submission_path=str(self.settings.paths.submission_sample),
                 train_inner_path=str(train_inner_path),
                 valid_holdout_path=str(valid_holdout_path),
+                rag_enabled=self.settings.rag.enabled,
             )
 
             print("=== EXPLORER ===")

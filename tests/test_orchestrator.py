@@ -10,10 +10,12 @@ from kaggle_solver.models import CriticReview, ExplorerPlan, ModelCapabilities
 from kaggle_solver.orchestrator import SolverOrchestrator
 from kaggle_solver.settings import (
     AppSettings,
+    EmbeddingSettings,
     LLMSettings,
     LoggingSettings,
     ModelSettings,
     PathSettings,
+    RAGSettings,
     RunSettings,
 )
 
@@ -76,6 +78,7 @@ def _write_dataset(base_dir: Path) -> PathSettings:
         submissions=artifacts_dir / "submissions",
         submission_current=artifacts_dir / "submissions" / "current_iteration",
         iteration_reports=artifacts_dir / "logs" / "iterations",
+        rag_index=artifacts_dir / "rag",
     )
 
 
@@ -104,6 +107,24 @@ def _build_settings(base_dir: Path, max_iters: int) -> AppSettings:
             base_url="https://example.com/v1",
             capabilities=ModelCapabilities(),
             request_timeout_seconds=180.0,
+        ),
+        embedding=EmbeddingSettings(
+            api_key="embed-key",
+            base_url="https://embed.example.com/v1",
+            model="text-embedding-3-small",
+            dimension=8,
+            request_timeout_seconds=30.0,
+        ),
+        rag=RAGSettings(
+            enabled=False,
+            context_csv_path=base_dir / "rag_context.csv",
+            qdrant_url="http://localhost:6333",
+            qdrant_collection="kaggle_writeups",
+            qdrant_api_key=None,
+            qdrant_timeout_seconds=30.0,
+            top_k=5,
+            max_top_k=5,
+            auto_reindex=True,
         ),
         logging=LoggingSettings(level="INFO"),
     )

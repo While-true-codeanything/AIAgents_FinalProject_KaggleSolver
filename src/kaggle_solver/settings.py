@@ -54,6 +54,7 @@ class PathSettings:
     submissions: Path
     submission_current: Path
     iteration_reports: Path
+    rag_index: Path
 
     @property
     def managed_directories(self) -> tuple[Path, ...]:
@@ -66,6 +67,7 @@ class PathSettings:
             self.submissions,
             self.submission_current,
             self.iteration_reports,
+            self.rag_index,
         )
 
 
@@ -107,12 +109,41 @@ class LoggingSettings:
 
 
 @dataclass(frozen=True)
+class RAGSettings:
+    enabled: bool
+    context_csv_path: Path
+    qdrant_url: str
+    qdrant_collection: str
+    qdrant_api_key: str | None
+    qdrant_timeout_seconds: float
+    top_k: int
+    max_top_k: int
+    auto_reindex: bool
+    indexing_batch_size: int = 32
+
+
+@dataclass(frozen=True)
+class EmbeddingSettings:
+    api_key: str | None
+    base_url: str | None
+    model: str | None
+    dimension: int
+    request_timeout_seconds: float
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.api_key and self.base_url and self.model)
+
+
+@dataclass(frozen=True)
 class AppSettings:
     project_root: Path
     paths: PathSettings
     run: RunSettings
     models: ModelSettings
     llm: LLMSettings
+    embedding: EmbeddingSettings
+    rag: RAGSettings
     logging: LoggingSettings
 
 
@@ -141,6 +172,7 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         submissions=artifacts_dir / "submissions",
         submission_current=artifacts_dir / "submissions" / "current_iteration",
         iteration_reports=artifacts_dir / "logs" / "iterations",
+        rag_index=artifacts_dir / "rag",
     )
 
     run = RunSettings(
@@ -165,9 +197,34 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         api_key=_env_str("LLM_API_KEY"),
         base_url=_env_str("LLM_BASE_URL"),
         capabilities=ModelCapabilities(
+            function_calling=_env_bool("LLM_FUNCTION_CALLING_ENABLED", True),
             structured_output=_env_bool("LLM_STRUCTURED_OUTPUTS_ENABLED", True),
         ),
         request_timeout_seconds=_env_float("LLM_REQUEST_TIMEOUT_SECONDS", 180.0),
+    )
+
+    embedding = EmbeddingSettings(
+        api_key=os.getenv("EMBEDDING_API_KEY"),
+        base_url=os.getenv("EMBEDDING_BASE_URL"),
+        model=os.getenv("EMBEDDING_MODEL"),
+        dimension=_env_int("EMBEDDING_DIMENSION", 1536),
+        request_timeout_seconds=_env_float("EMBEDDING_REQUEST_TIMEOUT_SECONDS", 180.0),
+    )
+
+    rag = RAGSettings(
+        enabled=_env_bool("RAG_ENABLED", False),
+        context_csv_path=_resolve_path(
+            os.getenv("RAG_CONTEXT_CSV_PATH", "rag_context/kaggle_writeups_0341_03202026.csv"),
+            PROJECT_ROOT,
+        ),
+        qdrant_url=os.getenv("RAG_QDRANT_URL", "http://localhost:6333"),
+        qdrant_collection=os.getenv("RAG_QDRANT_COLLECTION", "kaggle_writeups"),
+        qdrant_api_key=os.getenv("RAG_QDRANT_API_KEY"),
+        qdrant_timeout_seconds=_env_float("RAG_QDRANT_TIMEOUT_SECONDS", 30.0),
+        top_k=_env_int("RAG_TOP_K", 5),
+        max_top_k=_env_int("RAG_MAX_TOP_K", 5),
+        auto_reindex=_env_bool("RAG_AUTO_REINDEX", True),
+        indexing_batch_size=max(1, _env_int("RAG_INDEXING_BATCH_SIZE", 32)),
     )
 
     logging_settings = LoggingSettings(
@@ -180,5 +237,7 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
         run=run,
         models=models,
         llm=llm,
+        embedding=embedding,
+        rag=rag,
         logging=logging_settings,
     )

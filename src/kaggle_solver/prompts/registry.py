@@ -92,9 +92,10 @@ class PromptRegistry:
             "explorer": PromptSpec(
                 role="explorer",
                 description="An ML data analyst specialized in practical tabular competition baselines.",
-                goal="Analyze the dataset summary, infer the task shape, and propose a strong baseline plan.",
-                task_instruction="Review the dataset summary and produce a baseline ML plan.",
+                goal="Analyze the dataset summary, infer the task shape, search relevant Kaggle writeups, and propose a strong baseline plan.",
+                task_instruction="Review the dataset summary, search the Kaggle writeups corpus, and produce a baseline ML plan.",
                 constraints_builder=lambda current: [
+                    "Use the kaggle writeups search tool at least once before finalizing the plan when RAG is enabled.",
                     "Propose only approaches compatible with the installed libraries.",
                     "Prefer practical tabular ML solutions and lightweight feature engineering.",
                     "If the dataset has many categorical features, CatBoost is a strong baseline.",
@@ -148,9 +149,10 @@ class PromptRegistry:
             "critic": PromptSpec(
                 role="critic",
                 description="A tabular ML reviewer focused on failure analysis and targeted iteration feedback.",
-                goal="Review the current pipeline run and identify the most important next improvement.",
-                task_instruction="Review the current iteration and propose the next targeted change.",
+                goal="Review the current pipeline run, search relevant Kaggle writeups when useful, and identify the most important next improvement.",
+                task_instruction="Review the current iteration, search the Kaggle writeups corpus when it can improve the critique, and propose the next targeted change.",
                 constraints_builder=lambda current: [
+                    "Use the kaggle writeups search tool when looking for Kaggle-specific tricks, baselines, or alternatives to the current approach if RAG is enabled.",
                     "Suggest only improvements compatible with the installed libraries.",
                     "Preserve the current working pipeline if it already runs.",
                     "If the code failed, focus on the failure cause.",

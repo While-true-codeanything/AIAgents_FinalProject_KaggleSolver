@@ -16,6 +16,7 @@ class DatasetContext(BaseModel):
     sample_submission_path: str
     train_inner_path: str | None = None
     valid_holdout_path: str | None = None
+    rag_enabled: bool = False
 
 
 class SubmissionContext(BaseModel):

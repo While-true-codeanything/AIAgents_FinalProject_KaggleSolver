@@ -45,11 +45,10 @@ class ModelCapabilities(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     vision: bool = False
-    function_calling: bool = False
+    function_calling: bool = True
     json_output: bool = False
     structured_output: bool = True
     family: str = "unknown"
 
     def to_model_info(self) -> dict[str, bool | str]:
         return self.model_dump()
-

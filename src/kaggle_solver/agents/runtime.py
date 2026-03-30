@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Generic, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import StructuredMessage, TextMessage
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from kaggle_solver.models import AgentRole
 from kaggle_solver.prompts import PromptRegistry
+from kaggle_solver.rag import RAGIndexManager, RAGSearchService, build_search_kaggle_writeups_tool
 from kaggle_solver.settings import AppSettings, load_settings
 
 logger = logging.getLogger(__name__)
@@ -58,14 +59,52 @@ class AgentRunResult(Generic[StructuredT]):
 
 
 class AgentRegistry:
-    def __init__(self, settings: AppSettings | None = None, prompt_registry: PromptRegistry | None = None) -> None:
+    def __init__(
+        self,
+        settings: AppSettings | None = None,
+        prompt_registry: PromptRegistry | None = None,
+        rag_index_manager: RAGIndexManager | None = None,
+        rag_search_service: RAGSearchService | None = None,
+    ) -> None:
         self.settings = settings or load_settings()
         self.prompt_registry = prompt_registry or PromptRegistry(self.settings)
         self._clients: dict[AgentRole, OpenAIChatCompletionClient] = {}
         self._agents: dict[AgentRole, AssistantAgent] = {}
+        self._role_tools: dict[AgentRole, list[Any]] = {}
+        self._index_manager: RAGIndexManager | None = rag_index_manager
+        self._search_service: RAGSearchService | None = rag_search_service
         self._build_agents()
 
+    def _ensure_rag_ready(self) -> None:
+        if not self.settings.rag.enabled:
+            return
+        if not self.settings.llm.capabilities.function_calling:
+            raise ValueError("RAG is enabled but LLM function calling is disabled.")
+        if not self.settings.embedding.configured:
+            raise ValueError("RAG is enabled but embedding settings are incomplete.")
+        if not self.settings.rag.context_csv_path.exists():
+            raise FileNotFoundError(f"RAG context CSV not found: {self.settings.rag.context_csv_path}")
+
+        if self._index_manager is None:
+            self._index_manager = RAGIndexManager(settings=self.settings)
+        if self.settings.rag.auto_reindex:
+            self._index_manager.build_or_update_index(force=False)
+        if self._search_service is None:
+            self._search_service = RAGSearchService(settings=self.settings, index_manager=self._index_manager)
+
+    def _tools_for_role(self, role: AgentRole) -> list[Any]:
+        if not self.settings.rag.enabled or role not in {"explorer", "critic"}:
+            return []
+        if self._search_service is None:
+            self._ensure_rag_ready()
+        if self._search_service is None:
+            return []
+        return [build_search_kaggle_writeups_tool(self._search_service)]
+
     def _build_agents(self) -> None:
+        if self.settings.rag.enabled:
+            self._ensure_rag_ready()
+
         role_to_model = {
             "explorer": self.settings.models.explorer,
             "engineer": self.settings.models.engineer,
@@ -77,9 +116,11 @@ class AgentRegistry:
             spec = self.prompt_registry.get(role)
             client = build_model_client(model_name, settings=self.settings)
             output_model = spec.output_model if self.settings.llm.capabilities.structured_output else None
+            tools = self._tools_for_role(role)
             agent = AssistantAgent(
                 name=role,
                 model_client=client,
+                tools=tools or None,
                 description=spec.description,
                 system_message=self.prompt_registry.render_system_message(role),
                 output_content_type=output_model,
@@ -87,10 +128,12 @@ class AgentRegistry:
                     "role": role,
                     "model": model_name,
                     "structured_output": str(bool(output_model)),
+                    "rag_enabled": str(bool(tools)),
                 },
             )
             self._clients[role] = client
             self._agents[role] = agent
+            self._role_tools[role] = tools
 
     async def run_agent(self, role: AgentRole, prompt_context: BaseModel | str) -> AgentRunResult[BaseModel]:
         prompt_text = self.prompt_registry.render_user_message(role, prompt_context)
@@ -124,3 +167,6 @@ class AgentRegistry:
     async def aclose(self) -> None:
         for client in self._clients.values():
             await client.close()
+
+    def has_tools(self, role: AgentRole) -> bool:
+        return bool(self._role_tools.get(role))
