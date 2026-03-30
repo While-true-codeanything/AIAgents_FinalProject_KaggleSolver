@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any, Literal
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from dotenv import load_dotenv
 from kaggle_solver.models import ModelCapabilities
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh"]
 
 
 def _resolve_path(value: str | Path, base_dir: Path) -> Path:
@@ -38,6 +40,26 @@ def _env_bool(name: str, default: bool) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_optional_bool(name: str) -> bool | None:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return None
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_optional_reasoning_effort(name: str) -> ReasoningEffort | None:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return None
+    normalized = value.strip().lower()
+    valid_values = {"none", "minimal", "low", "medium", "high", "xhigh"}
+    if normalized not in valid_values:
+        raise ValueError(
+            f"Environment variable {name} must be one of: {', '.join(sorted(valid_values))}."
+        )
+    return normalized  # type: ignore[return-value]
 
 
 @dataclass(frozen=True)
@@ -97,10 +119,21 @@ class LLMSettings:
     base_url: str
     capabilities: ModelCapabilities
     request_timeout_seconds: float
+    thinking_enabled: bool | None = None
+    reasoning_effort: ReasoningEffort | None = None
 
     @property
     def model_info(self) -> dict[str, bool | str]:
         return self.capabilities.to_model_info()
+
+    @property
+    def client_create_args(self) -> dict[str, Any]:
+        args: dict[str, Any] = {}
+        if self.reasoning_effort is not None:
+            args["reasoning_effort"] = self.reasoning_effort
+        if self.thinking_enabled is not None:
+            args["extra_body"] = {"thinking": {"enabled": self.thinking_enabled}}
+        return args
 
 
 @dataclass(frozen=True)
@@ -201,6 +234,8 @@ def load_settings(env_file: str | Path | None = None) -> AppSettings:
             structured_output=_env_bool("LLM_STRUCTURED_OUTPUTS_ENABLED", True),
         ),
         request_timeout_seconds=_env_float("LLM_REQUEST_TIMEOUT_SECONDS", 180.0),
+        thinking_enabled=_env_optional_bool("LLM_THINKING_ENABLED"),
+        reasoning_effort=_env_optional_reasoning_effort("LLM_REASONING_EFFORT"),
     )
 
     embedding = EmbeddingSettings(

@@ -6,6 +6,7 @@ from typing import Any, Callable
 
 from pydantic import BaseModel
 
+from kaggle_solver.agents.structured_output import FINAL_STRUCTURED_RESPONSE_TOOL_NAME
 from kaggle_solver.models import AgentRole, CriticReview, ExplorerPlan, IterationContext
 from kaggle_solver.settings import AppSettings
 
@@ -40,11 +41,22 @@ def _serialize_context(value: Any) -> str:
     return str(value)
 
 
-def _render_output_contract(output_model: type[BaseModel] | None, fallback_contract: str) -> str:
+def _render_output_contract(
+    output_model: type[BaseModel] | None,
+    fallback_contract: str,
+    tool_finalization: bool = False,
+) -> str:
     if output_model is None:
         return fallback_contract.strip()
 
     schema = json.dumps(output_model.model_json_schema(), indent=2, ensure_ascii=True)
+    if tool_finalization:
+        return (
+            f"Use tools as needed. To finish, call `{FINAL_STRUCTURED_RESPONSE_TOOL_NAME}` exactly once as the final action.\n"
+            f"The `payload` argument must conform to the `{output_model.__name__}` schema.\n"
+            "Do not return free-form text or JSON instead of the finalizer tool call.\n\n"
+            f"Schema:\n{schema}"
+        ).strip()
     return (
         f"Return output that conforms to the `{output_model.__name__}` schema.\n"
         f"If native structured output is not available, return valid JSON only.\n\n"
@@ -63,9 +75,13 @@ class PromptSpec:
     output_model: type[BaseModel] | None = None
     fallback_output_contract: str = "Return a concise text response."
 
-    def render_system_message(self, settings: AppSettings) -> str:
+    def render_system_message(self, settings: AppSettings, tool_finalization: bool = False) -> str:
         constraints = "\n".join(f"- {item}" for item in self.constraints_builder(settings))
-        output_contract = _render_output_contract(self.output_model, self.fallback_output_contract)
+        output_contract = _render_output_contract(
+            self.output_model,
+            self.fallback_output_contract,
+            tool_finalization=tool_finalization,
+        )
         libraries = "\n".join(f"- {item}" for item in AVAILABLE_LIBRARIES)
         return _render_sections(
             [
@@ -195,8 +211,8 @@ class PromptRegistry:
     def get(self, role: AgentRole) -> PromptSpec:
         return self._specs[role]
 
-    def render_system_message(self, role: AgentRole) -> str:
-        return self.get(role).render_system_message(self.settings)
+    def render_system_message(self, role: AgentRole, tool_finalization: bool = False) -> str:
+        return self.get(role).render_system_message(self.settings, tool_finalization=tool_finalization)
 
     def render_user_message(self, role: AgentRole, context: Any) -> str:
         return self.get(role).render_user_message(context)

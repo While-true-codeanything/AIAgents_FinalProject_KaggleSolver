@@ -6,12 +6,15 @@ This project runs a competition-specific tabular ML workflow with an orchestrato
 
 1. Copy [`.env.example`](/Users/dshindov/Code/AIAgents_FinalProject_KaggleSolver/.env.example) to `.env`.
 2. Fill in `LLM_API_KEY` and `LLM_BASE_URL`.
-3. If you want Kaggle writeups RAG, also configure the embedding variables in `.env`.
-3. Install dependencies:
+3. Optionally set `LLM_THINKING_ENABLED` and `LLM_REASONING_EFFORT` if your provider supports them.
+4. If you want Kaggle writeups RAG, also configure the embedding variables in `.env`.
+5. Install dependencies:
 
 ```bash
 uv sync
 ```
+
+`LLM_REASONING_EFFORT` accepts `none`, `minimal`, `low`, `medium`, `high`, or `xhigh`. `LLM_THINKING_ENABLED` is passed through as an OpenAI-compatible `extra_body.thinking.enabled` flag for providers that support it.
 
 ## Optional RAG Setup
 

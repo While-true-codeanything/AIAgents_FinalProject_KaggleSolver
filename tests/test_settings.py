@@ -18,6 +18,8 @@ def test_load_settings_from_env_file(
                 "LLM_API_KEY=test-key",
                 "LLM_BASE_URL=https://example.com/v1",
                 "LLM_ENGINEER_MODEL=custom-engineer",
+                "LLM_THINKING_ENABLED=true",
+                "LLM_REASONING_EFFORT=high",
                 "KAGGLE_SOLVER_MAX_ITERS=3",
                 "KAGGLE_SOLVER_VALID_SIZE=0.25",
             ]
@@ -27,13 +29,17 @@ def test_load_settings_from_env_file(
 
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("LLM_THINKING_ENABLED", raising=False)
+    monkeypatch.delenv("LLM_REASONING_EFFORT", raising=False)
 
     settings = load_settings(env_file=env_file)
 
     assert settings.llm.api_key == "test-key"
     assert settings.llm.base_url == "https://example.com/v1"
+    assert settings.llm.thinking_enabled is True
+    assert settings.llm.reasoning_effort == "high"
     assert settings.models.engineer == "custom-engineer"
-    assert settings.run.max_iters == 5
+    assert settings.run.max_iters == 3
     assert settings.run.valid_size == 0.25
     assert settings.llm.capabilities == ModelCapabilities()
     assert settings.paths.iteration_reports.name == "iterations"
@@ -45,3 +51,26 @@ def test_load_settings_requires_llm_env(monkeypatch: pytest.MonkeyPatch) -> None
 
     with pytest.raises(ValueError, match="LLM_API_KEY"):
         load_settings(env_file="/tmp/does-not-exist")
+
+
+def test_load_settings_rejects_invalid_reasoning_effort(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "LLM_API_KEY=test-key",
+                "LLM_BASE_URL=https://example.com/v1",
+                "LLM_REASONING_EFFORT=turbo",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("LLM_REASONING_EFFORT", raising=False)
+
+    with pytest.raises(ValueError, match="LLM_REASONING_EFFORT"):
+        load_settings(env_file=env_file)

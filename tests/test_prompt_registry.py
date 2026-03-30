@@ -94,6 +94,7 @@ def test_prompt_registry_renders_consistent_sections(tmp_path: Path) -> None:
     )
 
     system_prompt = registry.render_system_message("explorer")
+    fallback_system_prompt = registry.render_system_message("explorer", tool_finalization=True)
     user_prompt = registry.render_user_message("explorer", dataset_context)
 
     assert "Role:" in system_prompt
@@ -102,6 +103,9 @@ def test_prompt_registry_renders_consistent_sections(tmp_path: Path) -> None:
     assert "Required output contract:" in system_prompt
     assert "ExplorerPlan" in system_prompt
     assert "kaggle writeups search tool" in system_prompt
+    assert "submit_structured_response" not in system_prompt
+    assert "submit_structured_response" in fallback_system_prompt
+    assert "exactly once as the final action" in fallback_system_prompt
     assert "Task:" in user_prompt
     assert "Available context:" in user_prompt
 

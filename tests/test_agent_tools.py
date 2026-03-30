@@ -104,6 +104,10 @@ def test_agent_registry_adds_search_tools_only_to_explorer_and_critic(tmp_path: 
     assert registry.has_tools("critic")
     assert not registry.has_tools("engineer")
     assert not registry.has_tools("debugger")
+    assert registry.uses_tool_structured_fallback("explorer")
+    assert registry.uses_tool_structured_fallback("critic")
+    assert not registry.uses_tool_structured_fallback("engineer")
+    assert not registry.uses_tool_structured_fallback("debugger")
 
 
 def test_agent_registry_fails_when_rag_enabled_without_function_calling(tmp_path: Path) -> None:
